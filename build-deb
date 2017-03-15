@@ -1,0 +1,100 @@
+#!/bin/bash
+
+readonly SCRIPT_NAME=$(basename $0)
+readonly SCRIPT_PATH=$(dirname $0)
+
+show_help() {
+cat << EOF
+Usage: ${0##*/} [-h] [BUILD_FOLDER]...
+Builds deb-package in folder BUILD_FOLDER
+    -h          help
+EOF
+}
+
+error_exit() {
+  echo $1
+  exit 1
+}
+
+OPTIND=1
+while getopts ":h" opt; do
+  case "$opt" in
+    h)
+      show_help
+      exit 0
+      ;;
+    '?')
+      show_help
+      exit 1
+      ;;
+  esac
+done
+shift "$((OPTIND-1))"
+
+if [ $# -lt 1 ]
+then
+  echo "Build-folder required"
+  show_help
+  exit 1
+fi
+
+DEB_FOLDER=$SCRIPT_PATH/deb
+DEP_PACKAGE=$1
+BUILD_FOLDER=$DEB_FOLDER/$DEP_PACKAGE
+LOCAL_REPO=$SCRIPT_PATH/repo
+test -d ${LOCAL_REPO} || mkdir -p ${LOCAL_REPO}
+
+if [ ! -e ${BUILD_FOLDER}/DEBIAN -o ${BUILD_FOLDER} == "" ]; then
+  echo -e "BUILD_FOLDER does not exist or is invalid:\n$(ls $DEB_FOLDER)"
+  exit 1
+fi
+
+ensure_package() {
+  PKG=$1
+  which $PKG > /dev/null;
+  if [ $? -gt 0 ]; then
+    echo "Pakken $PKG fantes ikke, installerer"
+    flags="-y -qq"
+    if $VERBOSE ; then
+      flags=""
+    fi
+    sudo apt-get install $flags $PKG || error_exit "Greide ikke å installere $PKG"
+  fi
+}
+
+read_control_file_value() {
+  local FOLDER=$1
+  local KEY=$2
+  local FILE=${FOLDER}/DEBIAN/control
+  echo $(grep -i ${KEY}: ${FILE} | cut -d : -f 2 | tr -d ' ')
+}
+
+package_name() {
+  local FOLDER=$1
+  local VERSION=$(read_control_file_value $FOLDER version)
+  local NAME=$(read_control_file_value $FOLDER package)
+  local ARCH=$(read_control_file_value $FOLDER architecture)
+  echo ${NAME}_${VERSION}_${ARCH}
+}
+
+build_deb_package(){
+  echo "Build started: $SECONDS"
+
+  local BUILD_TEMP=$(mktemp -d)
+  local BUILD_TARGET=$BUILD_TEMP/${DEP_PACKAGE}
+  local PACKAGE_NAME=$(package_name $BUILD_FOLDER)
+  local DEB_FILE="${LOCAL_REPO}/${PACKAGE_NAME}.deb" 
+  echo "Building ${PACKAGE_NAME} into $BUILD_TARGET "
+  cp -R ${BUILD_FOLDER} $BUILD_TEMP/
+  find $BUILD_TARGET -name "*~" -exec rm '{}' \;
+  sudo chown -R root:root $BUILD_TARGET
+  ensure_package fakeroot
+  fakeroot dpkg -b $BUILD_TARGET $DEB_FILE
+  echo "Lintian output: "
+  ensure_package lintian
+  lintian --suppress-tags dir-or-file-in-opt,jar-not-in-usr-share,codeless-jar,extra-license-file $DEB_FILE 
+  sudo rm -rf $BUILD_TEMP
+  echo "Build completed in $SECONDS seconds.."
+}
+
+build_deb_package

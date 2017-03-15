@@ -1,0 +1,13 @@
+[Unit]
+Description=upgrade VMWare Horizon Agent 
+After=network-online.target
+After=multi-user.target
+
+[Service]
+Type=idle
+User=root
+PIDFile=/run/upgradeHorizonAgent.pid
+ExecStart=/usr/sbin/install_viewagent -A yes -M yes
+
+[Install]
+WantedBy=multi-user.target

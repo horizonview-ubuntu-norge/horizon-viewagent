@@ -1,0 +1,60 @@
+#Enable/Disable the Lossless PNG mode. Default is FALSE
+#RemoteDisplay.alwaysLossless=TRUE
+
+#Enable/Disable the left-handed mouse support on Ubuntu and RHEL 7. Default is False
+#mksVNCServer.useUInputButtonMapping=TRUE
+
+#Enable/Disable the left-handed mouse support on SLED11SP3. Default is False
+#mksVNCServer.useXExtButtonMapping=TRUE
+
+#Enable/Disable the audio out. Default is TRUE.
+#RemoteDisplay.allowAudio=FALSE
+
+#Set clipboard redirection. Default is 2. 0 means disable; 1 means both direction; 2 means from client to agent only, 3 means from agent to client only.
+#Clipboard.Direction=1
+
+#Set clipboard maximum size which should be specified in KBytes. Default is 1024 KBytes.
+#mksvchan.clipboardSize=1024
+
+#Enable/Disable the smartcard redirection. Default is TRUE
+#VVC.ScRedir.Enable=FALSE
+
+#Enable/Disable audio in feature. Default is TRUE
+#VVC.RTAV.Enable=FALSE
+
+#Loglevel for vmware-vvcProxy-Node log file. log level include [ fatal | error | warn | info | debug | trace | all ]. Default is info.
+#vvc.logLevel=debug
+
+#Loglevel for vmware-vdpService-Server log file. log level include [ error | warn | info | debug | trace | verbose]. Default is info.
+#vdpservice.log.logLevel=debug
+
+#Specifies the maximum bandwidth, in kilobits per second (kbps), for a VMware Blast session. The bandwidth includes all imaging, audio, virtual channel, and VMware Blast control traffic. The max value is 32 Gbps (32768000). The default is 32768000.
+#RemoteDisplay.maxBandwidthKbps=32768000
+
+#Specifies the maximum rate of screen updates. Use this setting to manage the average bandwidth that users consume. Valid value should be between 3 and 60. The default is 60 updates per second.
+#RemoteDisplay.maxFPS=60
+
+#Enable/Disable the Blast protocol statistics in mks log, such bandwidth, FPS, RTT, ... Default is FALSE
+#RemoteDisplay.enableStats=FALSE
+
+#Enable/Disable H.264 Encoding. Default is TRUE
+#RemoteDisplay.allowH264=FALSE
+
+#Max H264 Quantization Parameter (MINIMUM H264 QUALITY for the SW H264 encoder). Default is 36. Accept values from 0 to 51, but the value should be set larger than the value of RemoteDisplay.qpminH264.
+#RemoteDisplay.qpmaxH264=36
+
+#Min H264 Quantization Parameter (MAXIMUM H264 QUALITY for the SW H264 encoder). Default is 10. Accept values from 0 to 51, but the value should be set less than the value of RemoteDisplay.qpmaxH264.
+#RemoteDisplay.qpminH264=10
+
+#Specifies the image quality for the JPEG/PNG encoded desktop display. The low-quality settings are for areas of the screen that change often, for example, when scrolling occurs.
+#The high-quality settings are for areas of the screen that are more static, resulting in a better image quality. You can specify the following settings:
+
+#Available range of values: 1 - 100, default: 25
+#RemoteDisplay.minQualityJPEG=25
+
+#Available range of values: 1 - 100, default: 35
+#RemoteDisplay.midQualityJPEG=35
+
+#Available range of values: 1 - 100, default: 90
+#RemoteDisplay.maxQualityJPEG=90
+

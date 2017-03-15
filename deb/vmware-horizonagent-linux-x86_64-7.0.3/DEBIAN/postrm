@@ -1,0 +1,17 @@
+#!/bin/bash
+
+APP_NAME="vmware-horizonagent-linux-x86_64-7.0.3-4679208"
+APP_HOME=/opt/vmware
+APP_DIR=VMware-horizonagent-linux-x86_64-7.0.3-4679208
+
+error_exit() {
+	echo $1
+	echo "$APP_NAME is NOT removed"
+	exit 1
+}
+echo "Uninstalling $APP_NAME ..."
+
+echo "Deleting Application catalog"
+if [ -d $APP_HOME/$APP_DIR ]; then
+  rm -rf $APP_HOME/$APP_DIR || error_exit "Error removing $TARGET_DIR"
+fi

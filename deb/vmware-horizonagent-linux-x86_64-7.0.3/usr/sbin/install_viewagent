@@ -1,0 +1,82 @@
+#!/bin/bash
+APP_HOME=/opt/vmware
+APP_DIR=VMware-horizonagent-linux-x86_64-7.0.3-4679208
+InstalledVersion=$(head -n 1 /usr/lib/vmware/viewagent/Product.txt)
+InstallerVersion=$(head -n 1 ${APP_HOME}/$APP_DIR/Product.txt)
+
+createService() {
+  initialProc=$(ps -o "%c" -p 1)
+  initialProc=${initialProc##COMMAND[[:space:]]}
+  echo "Enable Service: $1 for $initialProc"
+
+  case ${initialProc^^} in
+  SYSTEMD)
+    cp ${APP_HOME}/$APP_DIR-config/${1}.service /lib/systemd/system/${1}.service
+    systemctl enable ${1}
+  ;;
+  INIT)
+    cp ${APP_HOME}/$APP_DIR-config/${1}.conf /etc/init/${1}.conf
+    chmod +x /etc/init/${1}.conf
+    init-checkconf /etc/init/${1}.conf
+  ;;
+  *)
+  echo "$initialProc is not yet defined"
+  exit 1
+  ;;
+  esac
+}
+
+disableService() {
+  initialProc=$(ps -o "%c" -p 1)
+  initialProc=${initialProc##COMMAND[[:space:]]}
+  echo "Disable Service: $1 for $initialProc"
+  case ${initialProc^^} in
+  SYSTEMD)
+    systemctl disable ${1}
+  ;;
+  INIT)
+    rm -f /etc/init/${1}.conf
+  ;;
+  *)
+  echo "$initialProc is not yet defined"
+  exit 1
+  ;;
+  esac
+}
+
+applyConfig() {
+    echo "Applying config for $InstallerVersion"
+    if [ ! -d /etc/vmware ]; then
+        mkdir -p /etc/vmware
+    fi
+    cp ${APP_HOME}/$APP_DIR-config/config /etc/vmware/
+    cp ${APP_HOME}/$APP_DIR-config/viewagent-custom.conf /etc/vmware/
+}
+
+runInstall() {
+    applyConfig
+    echo "Installing $InstallerVersion"
+    cd ${APP_HOME}/${APP_DIR}
+    ./install_viewagent.sh $@ && disableService upgradeHorizonAgent
+    cd -
+}
+
+if [ "$InstalledVersion" == "$InstallerVersion" ]; then
+    echo "No upgrade required.. current version is $InstalledVersion"
+    echo "Applying new config.."
+    applyConfig
+else
+    if [ -e /etc/vmware/viewagent-config.txt ]; then
+        # check if there is VMwareBlastServer running
+        pidof VMwareBlastServer >/dev/null 2>&1
+        if [ "$?" = "0" ]; then
+            # Prompt user to logout current session, then run install script
+            echo "Agent upgrade will be done at next boot."
+            createService upgradeHorizonAgent
+        else
+            runInstall $@
+        fi
+    else
+        runInstall $@
+    fi
+fi
