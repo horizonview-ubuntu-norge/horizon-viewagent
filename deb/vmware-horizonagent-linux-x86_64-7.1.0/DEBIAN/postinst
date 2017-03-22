@@ -1,0 +1,24 @@
+#!/bin/bash
+
+APP_NAME="VMware-horizonagent-linux-x86_64-7.1.0-5141896"
+FILENAME=VMware-horizonagent-linux-x86_64-7.1.0-5141896.tar.gz
+APP_HOME=/opt/vmware
+SHA256SUM="138d9e6ab02b34b638e6e00ce1e56e9168979c04e34ccea63ad43673c9167475"
+
+# General functions
+error_exit() {
+	echo $1
+	echo "$APP_NAME is NOT installed."
+	exit 1
+}
+
+cd $APP_HOME
+
+echo "Checking and unpacking archive file"
+echo "$SHA256SUM  $FILENAME" | sha256sum -c > /dev/null 2>&1 || error_exit "sha256sum mismatch for dowloaded file $FILENAME"
+tar zxvf $FILENAME || error_exit "Error extracting $FILENAME"
+
+cd -
+
+/usr/sbin/install_viewagent
+echo "Done installing $APP_NAME"

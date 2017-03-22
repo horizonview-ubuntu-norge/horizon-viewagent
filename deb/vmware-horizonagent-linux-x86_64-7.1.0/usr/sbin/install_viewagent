@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Usage: install_viewagent.sh [OPTION]... [VALUE]...
+
+# Optional parameters but required information
+# -A        yes|no <Accept|Refuse EULA>
+
+# Optional parameters
+# -M        yes|no Upgrade the Linux Agent to managed|un-managed agent. Default is yes.
+# -s        Self signed cert subject DN. By default, installer will use Blast for CN.
+# -j        JMS SSL keystore password. By default, installer will generate a random string.
+# -r        yes|no <Do|Not restart system after installation automatically>. Default is no.
+# -m        yes|no <Install|Bypass smartcard redirection support>. Default is no.
+# -F        yes|no <Install|Bypass Client Drive Redirection support>. Default is no.(TechPreview)
+# -a        yes|no <Install|Bypass audioin support>. Default is no.
+# -U        yes|no <Install|Bypass USB Redirection support>. Default is no. (TechPreview)
+# -C        yes|no <Install|Bypass Clipboard Redirection support>. Default is yes.
+
+# Example:
+# Fresh installation
+#   sudo ./install_viewagent.sh -A yes
+
+# Upgrade from un-managed VM deployment and keep un-managed VM style
+#   sudo ./install_viewagent.sh -A yes -M no
+
+# Upgrade from un-managed VM deployment and convert to managed VM style, which requires new desktop pool creation on broker:
+#   sudo ./install_viewagent.sh -A yes
+
+APP_HOME=/opt/vmware
+APP_DIR=VMware-horizonagent-linux-x86_64-7.1.0-5141896
+InstalledVersion=$(head -n 1 /usr/lib/vmware/viewagent/Product.txt)
+InstallerVersion=$(head -n 1 ${APP_HOME}/$APP_DIR/Product.txt)
+
+createService() {
+  initialProc=$(ps -o "%c" -p 1)
+  initialProc=${initialProc##COMMAND[[:space:]]}
+  echo "Enable Service: $1 for $initialProc"
+
+  case ${initialProc^^} in
+  SYSTEMD)
+    cp ${APP_HOME}/$APP_DIR-config/${1}.service /lib/systemd/system/${1}.service
+    systemctl enable ${1}
+  ;;
+  INIT)
+    cp ${APP_HOME}/$APP_DIR-config/${1}.conf /etc/init/${1}.conf
+    chmod +x /etc/init/${1}.conf
+    init-checkconf /etc/init/${1}.conf
+  ;;
+  *)
+  echo "$initialProc is not yet defined"
+  exit 1
+  ;;
+  esac
+}
+
+disableService() {
+  initialProc=$(ps -o "%c" -p 1)
+  initialProc=${initialProc##COMMAND[[:space:]]}
+  echo "Disable Service: $1 for $initialProc"
+  case ${initialProc^^} in
+  SYSTEMD)
+    systemctl disable ${1}
+  ;;
+  INIT)
+    rm -f /etc/init/${1}.conf
+  ;;
+  *)
+  echo "$initialProc is not yet defined"
+  exit 1
+  ;;
+  esac
+}
+
+applyConfig() {
+    echo "Applying config for $InstallerVersion"
+    if [ ! -d /etc/vmware ]; then
+        mkdir -p /etc/vmware
+    fi
+    cp ${APP_HOME}/$APP_DIR-config/config /etc/vmware/
+    cp ${APP_HOME}/$APP_DIR-config/viewagent-custom.conf /etc/vmware/
+}
+
+runInstall() {
+    applyConfig
+    echo "Installing $InstallerVersion"
+    cd ${APP_HOME}/${APP_DIR}
+    ./install_viewagent.sh $@ && disableService upgradeHorizonAgent
+    cd -
+}
+
+if [ -e /usr/lib/vmware/viewagent/Product.txt ]; then
+    if [ "$InstalledVersion" == "$InstallerVersion" ]; then
+        echo "No upgrade required.. current version is $InstalledVersion"
+        echo "Applying new config.."
+        applyConfig
+    else
+        # check if there is VMwareBlastServer running
+        pidof VMwareBlastServer >/dev/null 2>&1
+        if [ "$?" = "0" ]; then
+            # Prompt user to logout current session, then run install script
+            echo "Agent upgrade will be done at next boot."
+            createService upgradeHorizonAgent
+        else
+            runInstall -A yes -M yes
+        fi
+    fi
+else
+    runInstall -A yes
+fi

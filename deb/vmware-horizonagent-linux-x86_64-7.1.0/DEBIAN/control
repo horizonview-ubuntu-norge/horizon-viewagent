@@ -1,0 +1,10 @@
+Package: vmware-horizonagent-linux
+Version: 7.1.0-5141896-0ubuntu0
+Depends: python-gobject, python-dbus
+Architecture: amd64
+Maintainer: VMWare <post@vmware.com>
+Installed-Size: 215836 
+Section: misc
+Priority: extra
+Description: Pakke med VMWare Horizon Agent Mware-horizonagent-linux-x86_64
+  VMware Horizon agent for systems running 64-bit Linux: http://www.vmware.com/products/horizon.html
